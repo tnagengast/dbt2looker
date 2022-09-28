@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Union, Dict, List, Optional
+
 try:
     from typing import Literal
 except ImportError:
@@ -72,20 +73,12 @@ class LookerValueFormatName(str, Enum):
     percent_4 = 'percent_4'
 
 
-class LookerHiddenType(str, Enum):
-    yes = 'yes'
-    no = 'no'
-
-
 class Dbt2LookerMeasure(BaseModel):
     type: LookerAggregateMeasures
     filters: Optional[List[Dict[str, str]]] = []
     description: Optional[str]
     sql: Optional[str]
     value_format_name: Optional[LookerValueFormatName]
-    group_label: Optional[str]
-    label: Optional[str]
-    hidden: Optional[LookerHiddenType]
 
     @validator('filters')
     def filters_are_singular_dicts(cls, v: List[Dict[str, str]]):
@@ -104,7 +97,16 @@ class Dbt2LookerDimension(BaseModel):
     value_format_name: Optional[LookerValueFormatName]
 
 
+class Dbt2InnerLookerMeta(BaseModel):
+    measures: Optional[Dict[str, Dbt2LookerMeasure]] = {}
+    measure: Optional[Dict[str, Dbt2LookerMeasure]] = {}
+    metrics: Optional[Dict[str, Dbt2LookerMeasure]] = {}
+    metric: Optional[Dict[str, Dbt2LookerMeasure]] = {}
+    dimension: Optional[Dbt2LookerDimension] = Dbt2LookerDimension()
+
+
 class Dbt2LookerMeta(BaseModel):
+    looker: Optional[Dbt2InnerLookerMeta] = Dbt2InnerLookerMeta()
     measures: Optional[Dict[str, Dbt2LookerMeasure]] = {}
     measure: Optional[Dict[str, Dbt2LookerMeasure]] = {}
     metrics: Optional[Dict[str, Dbt2LookerMeasure]] = {}
@@ -151,12 +153,18 @@ class Dbt2LookerExploreJoin(BaseModel):
     sql_on: str
 
 
+class Dbt2MetaLookerModelMeta(BaseModel):
+    joins: Optional[List[Dbt2LookerExploreJoin]] = []
+    main_model: str
+
+
 class Dbt2LookerModelMeta(BaseModel):
+    looker: Optional[Dbt2MetaLookerModelMeta]
     joins: Optional[List[Dbt2LookerExploreJoin]] = []
 
 
 class DbtModelMeta(Dbt2LookerModelMeta):
-    pass
+    primary_key: Optional[str] = Field(None, alias='primary-key')
 
 
 class DbtModel(DbtNode):
@@ -168,6 +176,7 @@ class DbtModel(DbtNode):
     columns: Dict[str, DbtModelColumn]
     tags: List[str]
     meta: DbtModelMeta
+    create_explorer: bool = True
 
     @validator('columns')
     def case_insensitive_column_names(cls, v: Dict[str, DbtModelColumn]):
@@ -175,6 +184,23 @@ class DbtModel(DbtNode):
             name.lower(): column.copy(update={'name': column.name.lower()})
             for name, column in v.items()
         }
+
+
+class DbtExposureDependsOn(BaseModel):
+    macros: List[str]
+    nodes: List[str]
+
+
+class DbtExposure(DbtNode):
+    resource_type: Literal['exposure']
+    name: str
+    description: str
+    tags: List[str]
+    depends_on: DbtExposureDependsOn
+    meta: DbtModelMeta
+    original_file_path: str
+    path: str
+    root_path: str
 
 
 class DbtManifestMetadata(BaseModel):
@@ -191,6 +217,7 @@ class DbtManifestMetadata(BaseModel):
 
 class DbtManifest(BaseModel):
     nodes: Dict[str, Union[DbtModel, DbtNode]]
+    exposures: Dict[str, Union[DbtExposure, DbtNode]]
     metadata: DbtManifestMetadata
 
 
