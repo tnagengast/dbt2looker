@@ -2,18 +2,18 @@
 name = "dbt2looker"
 version = "0.11.0"
 description = "Generate lookml view files from dbt models"
-authors = ["oliverlaslett <oliver@gethubble.io>", "chaimturkel <cyturel@gmail.com>"]
+authors = ["tnagengast <tom@replicated.com>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/tnagengast/dbt2looker"
 repository = "https://github.com/tnagengast/dbt2looker"
 
 [tool.poetry.dependencies]
-python = ">=3.7"
+python = ">=3.9"
 lkml = "^1.2.0"
-pydantic = "^1.10.1"
+pydantic = "^1.10.2"
 PyYAML = "^6.0"
-jsonschema = "^4.15.0"
+jsonschema = "^4.16.0"
 typing-extensions = "^4.3.0"
 importlib-metadata = "^4.12.0"
 
